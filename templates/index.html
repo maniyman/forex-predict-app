@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHF Wechselkurs-Prognose</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header class="fade-in">
+        <h1>CHF Wechselkurs-Prognose</h1>
+    </header>
+
+    <div class="container card zoom-in">
+        <form id="predict-form">
+            <label for="target_currency">Zielwährung:</label>
+            <select id="target_currency">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="JPY">JPY</option>
+                <option value="CAD">CAD</option>
+                <option value="AUD">AUD</option>
+                <option value="CNY">CNY</option>
+                <option value="SEK">SEK</option>
+                <option value="NOK">NOK</option>
+                <option value="BRL">BRL</option>
+                <option value="INR">INR</option>
+            </select>
+
+            <label for="direction">Richtung:</label>
+            <select id="direction">
+                <option value="from_chf">CHF ➔ Zielwährung</option>
+                <option value="to_chf">Zielwährung ➔ CHF</option>
+            </select>
+
+            <input type="submit" value="Vorhersage starten">
+        </form>
+        
+        <div id="result" class="result"></div>
+
+        <div class="chart-wrapper">
+            <canvas id="historyChart"></canvas>
+        </div>
+
+        <div id="history-container">
+            <h3>Letzte 10 Tageskurse</h3>
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Kurs</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="output" class="fade-in"></div>
+        <canvas id="chart" class="fade-in"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        let chart;
+    
+        document.getElementById('predict-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+    
+            const currency = document.getElementById('target_currency').value;
+            const direction = document.getElementById('direction').value;
+    
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currency: currency, direction: direction })
+            });
+    
+            const data = await response.json();
+            if (data.error) {
+                document.getElementById('result').innerText = 'Fehler: ' + data.error;
+                return;
+            }
+    
+            document.getElementById('result').innerText = 'Vorhergesagter Kurs: ' + data.prediction;
+    
+            const tbody = document.querySelector('#history-table tbody');
+            tbody.innerHTML = "";
+    
+            const labels = [];
+            const values = [];
+    
+            data.history.forEach(entry => {
+                const row = document.createElement('tr');
+                const dateCell = document.createElement('td');
+                const rateCell = document.createElement('td');
+    
+                const [y, m, d] = entry.date.split("-");
+                const formattedDate = `${d}.${m}.${y}`;
+    
+                dateCell.innerText = formattedDate;
+                rateCell.innerText = entry.rate.toFixed(4);
+    
+                row.appendChild(dateCell);
+                row.appendChild(rateCell);
+                tbody.appendChild(row);
+    
+                labels.unshift(formattedDate);
+                values.unshift(entry.rate);
+            });
+    
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Wechselkurs Verlauf',
+                        data: values,
+                        borderColor: '#007acc',
+                        fill: false,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        });
+        </script>
+</body>
+</html>
