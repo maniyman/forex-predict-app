@@ -1,0 +1,37 @@
+name: Build and Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Scraper & Train Models
+        run: |
+          python scrape_all_currencies.py
+          python train_all_models.py
+
+      - name: Log in to Azure Container Registry
+        run: echo "${{ secrets.AZURE_PASSWORD }}" | docker login ${{ secrets.AZURE_REGISTRY }} -u ${{ secrets.AZURE_USERNAME }} --password-stdin
+
+      - name: Build Docker Image
+        run: docker build -t ${{ secrets.AZURE_REGISTRY }}/chf-predict-app:gh-actions .
+
+      - name: Push Docker Image
+        run: docker push ${{ secrets.AZURE_REGISTRY }}/chf-predict-app:gh-actions
