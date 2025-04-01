@@ -24,7 +24,7 @@ jobs:
 
       - name: Scrape exchange rates
         run: |
-          python forex_prediction/scrape_all_currencies.py
+          python forex_prediction/scrape_all_currencies_fixed.py
 
       - name: Train models
         run: |
