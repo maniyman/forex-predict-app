@@ -4,6 +4,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 import os
 
+# 🔌 MongoDB-Verbindung importieren
+from utils.db import db
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                   "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -53,14 +56,28 @@ def scrape_fxtop_currency(target_currency: str, max_days: int = 90):
                     date = datetime.strptime(date_str, "%A %d %B %Y")
                     rate = float(rate_str)
                     data.append({"date": date, "rate": rate})
+
+                    # 💾 MongoDB speichern
+                    db.forex_rates.update_one(
+                        {
+                            "base": base_currency,
+                            "target": target_currency,
+                            "date": date.strftime("%Y-%m-%d")
+                        },
+                        {
+                            "$set": {
+                                "value": rate
+                            }
+                        },
+                        upsert=True
+                    )
+
                 except Exception:
                     continue
 
         if data:
             df = pd.DataFrame(data)
             df = df.sort_values("date")
-
-            # 🔒 Nur die letzten 90 Tage behalten
             cutoff = datetime.today() - timedelta(days=max_days)
             df = df[df["date"] >= cutoff]
             df["date"] = df["date"].dt.strftime("%Y-%m-%d")

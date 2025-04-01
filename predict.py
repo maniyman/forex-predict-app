@@ -2,6 +2,10 @@ from flask import Flask, request, jsonify, render_template
 import joblib
 import pandas as pd
 import os
+from datetime import datetime
+
+# 🔌 MongoDB-Verbindung importieren
+from utils.db import db
 
 app = Flask(__name__)
 
@@ -40,10 +44,20 @@ def predict():
             prediction = 1 / prediction
             df["rate"] = 1 / df["rate"]
 
+        prediction = round(prediction, 4)
         df_preview = df[["date", "rate"]].head(10).to_dict(orient="records")
 
+        # 💾 Vorhersage in MongoDB speichern
+        db.forex_predictions.insert_one({
+            "base": "CHF" if direction == "from_chf" else currency.upper(),
+            "target": currency.upper() if direction == "from_chf" else "CHF",
+            "date": datetime.today().strftime("%Y-%m-%d"),
+            "predicted_value": prediction,
+            "model": "ARIMA"
+        })
+
         return jsonify({
-            "prediction": round(prediction, 4),
+            "prediction": prediction,
             "history": df_preview
         })
 
