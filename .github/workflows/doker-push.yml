@@ -1,0 +1,40 @@
+name: Scrape, Train and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Scrape exchange rates
+        run: |
+          python forex_prediction/scrape_all_currencies_fixed.py
+
+      - name: Train models
+        run: |
+          python forex_prediction/train_all_models.py
+
+      - name: Login to Azure Container Registry
+        run: echo "${{ secrets.AZURE_PASSWORD }}" | docker login ${{ secrets.AZURE_REGISTRY }} -u ${{ secrets.AZURE_USERNAME }} --password-stdin
+
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.AZURE_REGISTRY }}/chf-predict-app:gh-actions ./forex_prediction
+
+      - name: Push Docker image
+        run: docker push ${{ secrets.AZURE_REGISTRY }}/chf-predict-app:gh-actions
