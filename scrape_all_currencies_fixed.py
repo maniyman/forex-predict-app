@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import os
 
-# 🔌 MongoDB-Verbindung importieren
+# 🔌 MongoDB-Verbindung importierjjjen
 from utils.db import db
 
 HEADERS = {
