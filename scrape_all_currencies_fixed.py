@@ -7,6 +7,9 @@ import os
 # 🔌 MongoDB-Verbindung importieren
 from utils.db import db
 
+print("✅ Collections:", db.list_collection_names())
+
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                   "AppleWebKit/537.36 (KHTML, like Gecko) "
