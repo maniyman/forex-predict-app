@@ -1,30 +1,48 @@
-name: Build and Deploy Docker App to Azure
+name: Daily ML Retrain + Deployment
 
 on:
-  push:
-    branches:
-      - main  # oder dein Hauptbranch
+  schedule:
+    - cron: '0 6 * * *'  # Täglich um 06:00 UTC (08:00 MEZ)
+  workflow_dispatch:       # Erlaube manuelles Auslösen
 
 jobs:
-  build-and-deploy:
+  build-train-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+
     steps:
-    - name: 🔄 Code auschecken
+    - name: 📥 Checkout Repository
       uses: actions/checkout@v3
 
-    - name: 🔐 Bei ACR anmelden
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: 📦 Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: 🌐 Scrape forex data
+      run: python scrape_all_currencies_fixed.py
+
+    - name: 🧠 Train new models
+      run: python train_all_models.py
+
+    - name: 🔐 Login to Azure Container Registry
       run: echo "${{ secrets.ACR_PASSWORD }}" | docker login forexacr144.azurecr.io -u ${{ secrets.ACR_USERNAME }} --password-stdin
 
-    - name: 🛠 Docker-Image bauen
+    - name: 🐳 Build Docker Image (with trained models)
       run: docker build -t forexacr144.azurecr.io/forex-app:latest .
 
-    - name: 📤 Image pushen zu ACR
+    - name: 📤 Push Image to ACR
       run: docker push forexacr144.azurecr.io/forex-app:latest
 
-    - name: 🚀 Deployment auf Azure Web App
+    - name: 🌍 Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
         app-name: forex-webapp-144
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         images: forexacr144.azurecr.io/forex-app:latest
