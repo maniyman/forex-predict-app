@@ -102,16 +102,16 @@
                 // Debugging-Ausgabe für das Datum
                 console.log("Received date:", entry.date);  // Zeigt das Datum, das vom Backend kommt
 
-                // Sicherstellen, dass entry.date im Format YYYY-MM-DD ist
-                const dateParts = entry.date.split("-"); // Splitten nach "-" (Jahr-Monat-Tag)
-                if (dateParts.length === 3) {
-                    const formattedDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;  // Format: DD.MM.YYYY
-                    dateCell.innerText = formattedDate;
-                } else {
-                    dateCell.innerText = "Ungültiges Datum";
-                    console.log("Ungültiges Datum:", entry.date);  // Logge das ungültige Datum
-                }
+                // Direkt das Datum übernehmen, wie es vom Backend kommt
+                dateCell.innerText = entry.date;  // Kein Umwandeln des Datums mehr
 
                 rateCell.innerText = entry.rate.toFixed(4);
 
-                row.appendChild
+                row.appendChild(dateCell);  // Füge das Datum zur Zeile hinzu
+                row.appendChild(rateCell);  // Füge den Kurs zur Zeile hinzu
+                tbody.appendChild(row);  // Füge die Zeile zum Tabellenkörper hinzu
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,9 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
 from datetime import datetime, timedelta
 import os
 import time
+import pandas as pd 
 from utils.db import db  # MongoDB-Verbindung
 
 print("✅ Collections:", db.list_collection_names())
