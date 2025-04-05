@@ -6,6 +6,10 @@ from utils.db import db
 
 app = Flask(__name__)
 
+# Plattformunabhängiger Pfad zur models/ Directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model_directory = os.path.join(BASE_DIR, "models")
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -25,15 +29,12 @@ def predict():
         if not currency or direction not in ["from_chf", "to_chf"]:
             return jsonify({'error': 'Ungültige Eingabedaten.'}), 400
 
-        # Beispielhafte Pfadstruktur basierend auf deinem Beispiel
-        model_directory = r"C:\Users\41789\forex_prediction\models"
-        
         # Suche nach dem neuesten Modell basierend auf dem Erstellungsdatum im Dateinamen
         model_files = [f for f in os.listdir(model_directory) if f.startswith(f"arima_{currency}")]
         
         if not model_files:
             return jsonify({'error': 'Kein Modell für diese Währung gefunden.'}), 400
-        
+
         # Sortiere die Modell-Dateien nach dem Datum im Dateinamen (z.B. "2025-04-05")
         model_files.sort(key=lambda x: datetime.strptime(x.split('_')[-1].replace('.pkl', ''), "%Y-%m-%d"), reverse=True)
         
