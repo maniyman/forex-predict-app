@@ -45,7 +45,7 @@
         </div>
 
         <div id="history-container">
-            <h3>Letzte 10 Tageskurse</h3>
+            <h3>Letzte 20 Tageskurse</h3>
             <table id="history-table">
                 <thead>
                     <tr>
@@ -94,22 +94,60 @@
             const labels = [];
             const values = [];
 
+            // Dynamische Anpassung der Spaltenüberschrift
+            const directionText = (data.direction === "from_chf") ? `CHF ➔ ${currency.toUpperCase()}` : `${currency.toUpperCase()} ➔ CHF`;
+            document.querySelector('#history-table thead').innerHTML = `
+                <tr>
+                    <th>Datum</th>
+                    <th>Kurs (${directionText})</th>
+                </tr>
+            `;
+
             data.history.forEach(entry => {
                 const row = document.createElement('tr');
                 const dateCell = document.createElement('td');
                 const rateCell = document.createElement('td');
 
-                // Debugging-Ausgabe für das Datum
-                console.log("Received date:", entry.date);  // Zeigt das Datum, das vom Backend kommt
-
                 // Direkt das Datum übernehmen, wie es vom Backend kommt
                 dateCell.innerText = entry.date;  // Kein Umwandeln des Datums mehr
 
-                rateCell.innerText = entry.rate.toFixed(4);
+                // Korrekte Umrechnung, wenn es sich um Fremdwährung -> CHF handelt
+                let rate = entry.rate;
+                if (data.direction === "to_chf") {
+                    rate = 1 / entry.rate;  // Umkehren des Kurses für Fremdwährung -> CHF
+                }
+                
+                rateCell.innerText = rate.toFixed(4); // Anzeige des umgerechneten Wertes
 
                 row.appendChild(dateCell);  // Füge das Datum zur Zeile hinzu
                 row.appendChild(rateCell);  // Füge den Kurs zur Zeile hinzu
                 tbody.appendChild(row);  // Füge die Zeile zum Tabellenkörper hinzu
+
+                // Daten für das Chart vorbereiten
+                labels.unshift(entry.date);  // Datum wird im Chart verwendet
+                values.unshift(rate);  // Umgekehrter Kurs wird im Chart verwendet
+            });
+
+            // Chart erstellen
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Wechselkurs Verlauf (Letzte 20 Tage)',
+                        data: values,
+                        borderColor: '#007acc',
+                        fill: false,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
             });
         });
     </script>

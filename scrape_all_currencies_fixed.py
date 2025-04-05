@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import os
 import time
-import pandas as pd 
 from utils.db import db  # MongoDB-Verbindung
 
 print("✅ Collections:", db.list_collection_names())
@@ -16,7 +15,7 @@ HEADERS = {
 
 CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CNY", "SEK", "NOK", "BRL", "INR"]
 
-def scrape_fxtop_currency(target_currency: str, max_days: int = 10):
+def scrape_fxtop_currency(target_currency: str, max_days: int = 21):
     base_currency = "CHF"
     end_date = datetime.today()
     start_date = end_date - timedelta(days=max_days)
@@ -34,10 +33,11 @@ def scrape_fxtop_currency(target_currency: str, max_days: int = 10):
         response = requests.get(url, headers=HEADERS)
         response.raise_for_status()
 
-        os.makedirs("html_debug", exist_ok=True)
-        debug_path = f"html_debug/html_debug_{target_currency.lower()}.html"
-        with open(debug_path, "w", encoding="utf-8") as f:
-            f.write(response.text)
+        # HTML-Debug-Dateien entfernen, da diese nicht mehr benötigt werden
+        # os.makedirs("html_debug", exist_ok=True)
+        # debug_path = f"html_debug/html_debug_{target_currency.lower()}.html"
+        # with open(debug_path, "w", encoding="utf-8") as f:
+        #     f.write(response.text)
 
         soup = BeautifulSoup(response.text, "html.parser")
         table = soup.find("table", {"border": "1"})
@@ -57,11 +57,12 @@ def scrape_fxtop_currency(target_currency: str, max_days: int = 10):
                     date = datetime.strptime(date_str, "%A %d %B %Y")
                     rate = float(rate_str)
 
-                    # Sicherstellen, dass nur Daten der letzten 10 Tage gespeichert werden
+                    # Sicherstellen, dass nur Daten der letzten max_days gespeichert werden
                     if start_date <= date <= end_date:
                         data.append({"date": date.strftime('%Y-%m-%d'), "rate": rate})  # Formatierung auf 'YYYY-MM-DD'
 
-                        # 💾 MongoDB speichern
+                        # 💾 MongoDB speichern für beide Richtungen
+                        # CHF -> Fremdwährung
                         db.forex_rates.update_one(
                             {
                                 "base": base_currency,
@@ -75,18 +76,33 @@ def scrape_fxtop_currency(target_currency: str, max_days: int = 10):
                             },
                             upsert=True
                         )
+                        
+                        # Fremdwährung -> CHF (Umkehrung des Kurses)
+                        db.forex_rates.update_one(
+                            {
+                                "base": target_currency,
+                                "target": base_currency,
+                                "date": date.strftime("%Y-%m-%d")
+                            },
+                            {
+                                "$set": {
+                                    "value": 1 / rate  # Umkehrung des Kurses
+                                }
+                            },
+                            upsert=True
+                        )
 
                 except Exception:
                     continue
 
         if data:
-            df = pd.DataFrame(data)
-            df = df.sort_values(by="date")
-
-            os.makedirs("data", exist_ok=True)
-            file_path = f"data/chf_to_{target_currency.lower()}.csv"
-            df.to_csv(file_path, index=False)
-            print(f"✅ Gespeichert: {file_path} ({len(df)} Werte)")
+            # Die pandas Speicherung auf CSV wird entfernt
+            # os.makedirs("data", exist_ok=True)
+            # file_path = f"data/chf_to_{target_currency.lower()}.csv"
+            # df = pd.DataFrame(data)
+            # df = df.sort_values(by="date")
+            # df.to_csv(file_path, index=False)
+            print(f"✅ Erfolgreich in MongoDB gespeichert: {target_currency} ({len(data)} Werte)")
         else:
             print(f"⚠️ Keine gültigen Daten für {target_currency}")
 
@@ -96,7 +112,7 @@ def scrape_fxtop_currency(target_currency: str, max_days: int = 10):
     except Exception as e:
         print(f"💥 Fehler beim Scrapen von {target_currency}: {e}")
 
-
+# Die Funktion für alle Währungen aufrufen
 if __name__ == "__main__":
     for curr in CURRENCIES:
         scrape_fxtop_currency(curr)
