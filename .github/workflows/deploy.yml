@@ -1,12 +1,12 @@
-name: Daily ML Retrain + Deployment
+name: Daily ML Retrain (ohne Deployment)
 
 on:
   schedule:
-    - cron: '0 6 * * *'  # Täglich um 06:00 UTC (08:00 MEZ)
-  workflow_dispatch:       # Erlaube manuelles Auslösen
+    - cron: '0 6 * * *'  # Täglich um 06:00 UTC
+  workflow_dispatch:
 
 jobs:
-  build-train-deploy:
+  build-train-push:
     runs-on: ubuntu-latest
 
     env:
@@ -40,9 +40,3 @@ jobs:
 
     - name: 📤 Push Image to ACR
       run: docker push forexacr144.azurecr.io/forex-app:latest
-
-    - name: 🌍 Deploy to Azure Web App
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: forex-webapp-144
-        images: forexacr144.azurecr.io/forex-app:latest
