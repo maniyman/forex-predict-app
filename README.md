@@ -59,7 +59,7 @@ forex_prediction/
 
 ## 🚫 Noch nicht umgesetzt (optional):
 - [ ] GitHub Actions für automatisiertes Training & Scraping
-- [ ] Automatischer Daten-Upload nach MongoDB (optional)
+
 
 ---
 
