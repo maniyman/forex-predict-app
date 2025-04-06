@@ -94,3 +94,24 @@ Dann im Browser öffnen: [http://localhost:5000](http://localhost:5000)
 
 ## 📄 Autor / Projekt
 Dieses Projekt wurde im Rahmen von **MDM Projekt 1** eigenständig umgesetzt und dient als Anwendungsbeispiel für Scraping, Modellierung und Deployment mit Python & Flask.
+
+---
+
+## 🔄 Automatisierung & Deployment
+
+Das Projekt nutzt einen GitHub Actions Workflow, um täglich neue Wechselkursdaten zu scrapen, Modelle neu zu trainieren und ein aktualisiertes Docker-Image zu erstellen.
+
+### 🧭 Workflow-Ablauf:
+- Läuft täglich um 06:00 UTC (08:00 MEZ)
+- Scraping der Wechselkurse mit `scrape_all_currencies_fixed.py`
+- Modelltraining mit `train_all_models.py`
+- Erstellung eines Docker-Images
+- Push des Images zu Azure Container Registry (ACR)
+
+```bash
+forexacr144.azurecr.io/forex-app:latest
+```
+
+### ⚠️ Hinweis:
+Das Deployment zur Azure Web App erfolgt aktuell **nicht automatisch**, sondern wird manuell ausgelöst (z. B. über `az webapp restart`). Die Integration per Publish Profile ist vorbereitet, aber derzeit deaktiviert.
+
