@@ -1,0 +1,1 @@
+az webapp restart --name Forex-Webapp-CHF --resource-group forex-rg
